@@ -5,6 +5,7 @@
   "engines": {
     "node": ">=8.9"
   },
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build:apidocs": "lb-apidocs",
     "build": "lb-tsc es2017 --outDir dist",

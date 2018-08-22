@@ -12,7 +12,8 @@
   },
   "scripts": {
     "build:apidocs": "lb-apidocs",
-    "build": "lb-tsc es2017 --outDir dist",
+    "build": "lb-tsc",
+    "build:resources": "lb-copy-resources",
     "build:watch": "lb-tsc --watch",
     "clean": "lb-clean dist",
 <% if (project.prettier && project.tslint) { -%>
@@ -36,15 +37,15 @@
 <% } -%>
     "pretest": "npm run clean && npm run build",
 <% if (project.mocha) { -%>
-    "test": "lb-mocha --allow-console-logs \"dist/test\"",
+    "test": "lb-mocha --allow-console-logs \"dist/__tests__\"",
 <% } -%>
 <% if (project.prettier || project.tslint) { -%>
     "posttest": "npm run lint",
 <% } -%>
 <% if (project.mocha && (project.prettier || project.tslint)) { -%>
-    "test:dev": "lb-mocha --allow-console-logs dist/test/**/*.js && npm run posttest",
+    "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && npm run posttest",
 <% } else if (project.mocha) { -%>
-    "test:dev": "lb-mocha --allow-console-logs dist/test/**/*.js",
+    "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js",
 <% } -%>
 <% if (project.projectType === 'application') { -%>
     "prestart": "npm run build",
@@ -60,14 +61,6 @@
 <% } -%>
   "author": "",
   "license": "",
-  "files": [
-    "README.md",
-    "index.js",
-    "index.d.ts",
-    "dist/src",
-    "dist/index*",
-    "src"
-  ],
   "dependencies": {
     "@loopback/boot": "<%= project.dependencies['@loopback/boot'] -%>",
     "@loopback/context": "<%= project.dependencies['@loopback/context'] -%>",

@@ -5,12 +5,14 @@
   "engines": {
     "node": ">=8.9"
   },
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build:apidocs": "lb-apidocs",
     "build": "lb-tsc es2017 --outDir dist",
+    "build:resources": "lb-copy-resources",
     "clean": "lb-clean loopback-caching-proxy*.tgz dist package api-docs",
     "pretest": "npm run build",
-    "test": "lb-mocha \"dist/test/integration/**/*.js\"",
+    "test": "lb-mocha \"dist/__tests__/integration/**/*.js\"",
     "verify": "npm pack && tar xf loopback-caching-proxy*.tgz && tree package && npm run clean"
   },
   "author": "IBM",
@@ -40,14 +42,6 @@
     "Proxy",
     "Cache",
     "Test"
-  ],
-  "files": [
-    "README.md",
-    "index.js",
-    "index.d.ts",
-    "dist/src",
-    "dist/index*",
-    "src"
   ],
   "publishConfig": {
     "access": "public"

@@ -6,10 +6,12 @@
   "engines": {
     "node": ">=8.9"
   },
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build:apidocs": "lb-apidocs",
     "build": "lb-tsc es2017 --outDir dist",
-    "build:watch": "lb-tsc es2017 --outDir dist --watch",
+    "build:resources": "lb-copy-resources",
+    "build:watch": "lb-tsc --watch",
     "clean": "lb-clean *example-todo-list*.tgz dist package api-docs",
     "lint": "npm run prettier:check && npm run tslint",
     "lint:fix": "npm run tslint:fix && npm run prettier:fix",
@@ -19,8 +21,8 @@
     "tslint": "lb-tslint",
     "tslint:fix": "npm run tslint -- --fix",
     "pretest": "npm run build",
-    "test": "lb-mocha \"dist/test/*/**/*.js\"",
-    "test:dev": "lb-mocha --allow-console-logs dist/test/**/*.js && npm run posttest",
+    "test": "lb-mocha \"dist/__tests__/*/**/*.js\"",
+    "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && npm run posttest",
     "verify": "npm pack && tar xf loopback-todo-list*.tgz && tree package && npm run clean",
     "prestart": "npm run build",
     "start": "node ."

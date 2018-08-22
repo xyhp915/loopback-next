@@ -37,7 +37,7 @@ function run(argv, options) {
     // Fail any tests that are printing to console.
     mochaOpts.unshift(
       '--require',
-      require.resolve('../src/fail-on-console-logs'),
+      require.resolve('../lib/fail-on-console-logs'),
     );
   } else {
     // Allow tests to print to console, remove --allow-console-logs argument

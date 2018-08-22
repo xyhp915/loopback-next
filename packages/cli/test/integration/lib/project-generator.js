@@ -255,7 +255,6 @@ module.exports = function(projGenerator, props, projectType) {
         assert.noFileContent([
           ['package.json', '"typescript"'],
           ['tslint.json', '"rules"'],
-          ['tsconfig.json', '"compilerOptions"'],
         ]);
 
         if (projectType === 'application') {

@@ -64,15 +64,15 @@ describe('app-generator specific files', () => {
       /\'\@loopback\/rest\'/,
     );
     assert.fileContent(
-      'test/acceptance/ping.controller.acceptance.ts',
+      'src/__tests__/acceptance/ping.controller.acceptance.ts',
       /describe\('PingController'/,
     );
     assert.fileContent(
-      'test/acceptance/home-page.acceptance.ts',
+      'src/__tests__/acceptance/home-page.acceptance.ts',
       /describe\('HomePage'/,
     );
     assert.fileContent(
-      'test/acceptance/test-helper.ts',
+      'src/__tests__/acceptance/test-helper.ts',
       /export async function setupApplication/,
     );
   });

@@ -242,8 +242,9 @@ with a test to verify that the error is thrown properly.
 {% include code-caption.html content="test/integration/controllers/hello.controller.integration.ts" %}
 
 ```ts
-import {HelloController} from '../../../src/controllers';
-import {HelloRepository} from '../../../src/repositories';
+// test/integration/controllers/hello.controller.integration.ts
+import {HelloController} from '../../../controllers';
+import {HelloRepository} from '../../../repositories';
 import {testdb} from '../../fixtures/datasources/testdb.datasource';
 import {expect} from '@loopback/testlab';
 import {HttpErrors} from '@loopback/rest';

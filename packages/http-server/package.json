@@ -5,12 +5,14 @@
   "engines": {
     "node": ">=8.9"
   },
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build:apidocs": "lb-apidocs",
     "build": "lb-tsc es2017 --outDir dist",
+    "build:resources": "lb-copy-resources",
     "clean": "lb-clean loopback-http-server*.tgz dist package api-docs",
     "pretest": "npm run build",
-    "test": "lb-mocha \"dist/test/**/*.js\"",
+    "test": "lb-mocha \"dist/__tests__/**/*.js\"",
     "verify": "npm pack && tar xf loopback-http-server*.tgz && tree package && npm run clean"
   },
   "author": "IBM",
@@ -28,14 +30,6 @@
     "@types/request-promise-native": "^1.0.15",
     "request-promise-native": "^1.0.5"
   },
-  "files": [
-    "README.md",
-    "index.js",
-    "index.d.ts",
-    "dist/src",
-    "dist/index*",
-    "src"
-  ],
   "publishConfig": {
     "access": "public"
   },
