@@ -5,7 +5,8 @@
 
 import {Binding, BoundValue} from '@loopback/context';
 import {ResolvedRoute, RouteEntry} from './router';
-import {Request, Response} from 'express';
+import {Request, Response, RequestHandler} from 'express';
+import {PathParams} from 'express-serve-static-core';
 
 export {Request, Response};
 
@@ -111,3 +112,21 @@ export type OperationRetval = any;
 
 export type GetFromContext = (key: string) => Promise<BoundValue>;
 export type BindElement = (key: string) => Binding;
+
+/**
+ * Middleware registration entry
+ */
+export interface Middleware {
+  method?:
+    | 'all'
+    | 'get'
+    | 'post'
+    | 'put'
+    | 'delete'
+    | 'patch'
+    | 'options'
+    | 'head';
+  path?: PathParams;
+  phase?: string;
+  handler: RequestHandler;
+}
