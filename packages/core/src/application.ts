@@ -7,13 +7,14 @@ import {Context, Binding, BindingScope, Constructor} from '@loopback/context';
 import {Server} from './server';
 import {Component, mountComponent} from './component';
 import {CoreBindings} from './keys';
+import {LifeCycleObserver} from './lifecycle';
 
 /**
  * Application is the container for various types of artifacts, such as
  * components, servers, controllers, repositories, datasources, connectors,
  * and models.
  */
-export class Application extends Context {
+export class Application extends Context implements LifeCycleObserver {
   constructor(public options: ApplicationConfig = {}) {
     super();
 
@@ -110,7 +111,7 @@ export class Application extends Context {
    * @memberof Application
    */
   public async getServer<T extends Server>(
-    target: Constructor<T> | String,
+    target: Constructor<T> | string,
   ): Promise<T> {
     let key: string;
     // instanceof check not reliable for string.
@@ -130,6 +131,13 @@ export class Application extends Context {
    * @memberof Application
    */
   public async start(): Promise<void> {
+    await this._forEachComponent(async c => {
+      if (c.lifeCycleObservers) {
+        for (const observer of c.lifeCycleObservers) {
+          await observer.start();
+        }
+      }
+    });
     await this._forEachServer(s => s.start());
   }
 
@@ -140,22 +148,62 @@ export class Application extends Context {
    */
   public async stop(): Promise<void> {
     await this._forEachServer(s => s.stop());
+    await this._forEachComponent(async c => {
+      if (c.lifeCycleObservers) {
+        for (const observer of c.lifeCycleObservers.reverse()) {
+          await observer.stop();
+        }
+      }
+    });
   }
 
   /**
-   * Helper function for iterating across all registered server components.
+   * Discover bindings matching the key namespace or tag
+   * @param keyNamespace Binding key prefix
+   * @param tag Tag name
+   */
+  private _findByNamespaceOrTag(keyNamespace: string, tag?: string) {
+    const bindings = this.find(
+      b => b.key.startsWith(`${keyNamespace}.`) || (tag && b.tagMap[tag]),
+    );
+    return bindings;
+  }
+
+  /**
+   * Helper function for iterating across all registered servers.
    * @protected
    * @template T
    * @param {(s: Server) => Promise<T>} fn The function to run against all
    * registered servers
    * @memberof Application
    */
-  protected async _forEachServer<T>(fn: (s: Server) => Promise<T>) {
-    const bindings = this.find(`${CoreBindings.SERVERS}.*`);
+  protected async _forEachServer<T>(fn: (s: Server) => Promise<T> | T) {
+    const bindings = this._findByNamespaceOrTag(CoreBindings.SERVERS, 'server');
     await Promise.all(
       bindings.map(async binding => {
         const server = await this.get<Server>(binding.key);
         return await fn(server);
+      }),
+    );
+  }
+
+  /**
+   * Helper function for iterating across all registered components.
+   * @protected
+   * @template T
+   * @param {(s: Server) => Promise<T>} fn The function to run against all
+   * registered components
+   * @memberof Application
+   */
+  protected async _forEachComponent<T>(fn: (c: Component) => Promise<T> | T) {
+    const bindings = this._findByNamespaceOrTag(
+      CoreBindings.COMPONENTS,
+      'component',
+    );
+    await Promise.all(
+      bindings.map(async binding => {
+        const component = await this.get<Component>(binding.key);
+        return await fn(component);
       }),
     );
   }
@@ -183,7 +231,7 @@ export class Application extends Context {
    */
   public component(componentCtor: Constructor<Component>, name?: string) {
     name = name || componentCtor.name;
-    const componentKey = `components.${name}`;
+    const componentKey = `${CoreBindings.COMPONENTS}.${name}`;
     this.bind(componentKey)
       .toClass(componentCtor)
       .inScope(BindingScope.SINGLETON)

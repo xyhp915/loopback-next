@@ -3,15 +3,22 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import {expect} from '@loopback/testlab';
-import {Application, Server, Component, CoreBindings} from '../..';
 import {
-  Context,
-  Constructor,
   Binding,
-  Provider,
+  Constructor,
+  Context,
   inject,
+  Provider,
+  BindingScope,
 } from '@loopback/context';
+import {expect} from '@loopback/testlab';
+import {
+  Application,
+  Component,
+  CoreBindings,
+  LifeCycleObserver,
+  Server,
+} from '../..';
 
 describe('Application', () => {
   describe('controller binding', () => {
@@ -165,12 +172,45 @@ describe('Application', () => {
     it('starts all injected servers', async () => {
       const app = new Application();
       app.component(FakeComponent);
-
+      const component = await app.get<FakeComponent>(
+        `${CoreBindings.COMPONENTS}.FakeComponent`,
+      );
+      expect(component.status).to.equal('not-initialized');
       await app.start();
       const server = await app.getServer(FakeServer);
+
+      expect(server).to.not.be.null();
+      expect(server.listening).to.equal(true);
+      expect(component.status).to.equal('started');
+      await app.stop();
+    });
+
+    it('starts servers bound with `server` tag', async () => {
+      const app = new Application();
+      app
+        .bind('fake-server')
+        .toClass(FakeServer)
+        .tag('server')
+        .inScope(BindingScope.SINGLETON);
+      await app.start();
+      const server = await app.get<FakeServer>('fake-server');
+
       expect(server).to.not.be.null();
       expect(server.listening).to.equal(true);
       await app.stop();
+    });
+
+    it('starts/stops all registered components', async () => {
+      const app = new Application();
+      app.component(FakeComponent);
+      const component = await app.get<FakeComponent>(
+        `${CoreBindings.COMPONENTS}.FakeComponent`,
+      );
+      expect(component.status).to.equal('not-initialized');
+      await app.start();
+      expect(component.status).to.equal('started');
+      await app.stop();
+      expect(component.status).to.equal('stopped');
     });
 
     it('does not attempt to start poorly named bindings', async () => {
@@ -189,15 +229,24 @@ describe('Application', () => {
   }
 });
 
-class FakeComponent implements Component {
+class FakeComponent implements Component, LifeCycleObserver {
+  status = 'not-initialized';
   servers: {
     [name: string]: Constructor<Server>;
   };
+  lifeCycleObservers: LifeCycleObserver[];
   constructor() {
     this.servers = {
       FakeServer,
       FakeServer2: FakeServer,
     };
+    this.lifeCycleObservers = [this];
+  }
+  start() {
+    this.status = 'started';
+  }
+  stop() {
+    this.status = 'stopped';
   }
 }
 
