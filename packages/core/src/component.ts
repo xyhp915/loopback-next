@@ -71,8 +71,6 @@ export interface Component {
    */
   bindings?: Binding[];
 
-  lifeCycleObservers?: LifeCycleObserver[];
-
   /**
    * Other properties
    */

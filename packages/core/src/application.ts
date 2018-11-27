@@ -3,20 +3,27 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import {Context, Binding, BindingScope, Constructor} from '@loopback/context';
-import {Server} from './server';
+import {Binding, BindingScope, Constructor} from '@loopback/context';
 import {Component, mountComponent} from './component';
 import {CoreBindings} from './keys';
-import {LifeCycleObserver} from './lifecycle';
+import {
+  asLifeCycleObserverBinding,
+  isLifeCycleObserverClass,
+} from './lifecycle';
+import {ContextWithLifeCycle} from './lifecycle-context';
+import {Server} from './server';
+const CoreTags = CoreBindings.Tags;
+import debugFactory = require('debug');
+const debug = debugFactory('loopback:core:application');
 
 /**
  * Application is the container for various types of artifacts, such as
  * components, servers, controllers, repositories, datasources, connectors,
  * and models.
  */
-export class Application extends Context implements LifeCycleObserver {
+export class Application extends ContextWithLifeCycle {
   constructor(public options: ApplicationConfig = {}) {
-    super();
+    super('application');
 
     // Bind to self to allow injection of application context in other modules.
     this.bind(CoreBindings.APPLICATION_INSTANCE).to(this);
@@ -42,9 +49,11 @@ export class Application extends Context implements LifeCycleObserver {
    */
   controller(controllerCtor: ControllerClass, name?: string): Binding {
     name = name || controllerCtor.name;
-    return this.bind(`controllers.${name}`)
+    const key = `controllers.${name}`;
+    debug('Adding controller %s', name);
+    return this.bind(key)
       .toClass(controllerCtor)
-      .tag('controller');
+      .tag(CoreTags.CONTROLLER);
   }
 
   /**
@@ -70,10 +79,11 @@ export class Application extends Context implements LifeCycleObserver {
   ): Binding {
     const suffix = name || ctor.name;
     const key = `${CoreBindings.SERVERS}.${suffix}`;
+    debug('Adding server %s', suffix);
     return this.bind(key)
       .toClass(ctor)
-      .tag('server')
-      .inScope(BindingScope.SINGLETON);
+      .tag(CoreTags.SERVER)
+      .apply(asLifeCycleObserverBinding);
   }
 
   /**
@@ -125,90 +135,6 @@ export class Application extends Context implements LifeCycleObserver {
   }
 
   /**
-   * Start the application, and all of its registered servers.
-   *
-   * @returns {Promise}
-   * @memberof Application
-   */
-  public async start(): Promise<void> {
-    await this._forEachComponent(async c => {
-      if (c.lifeCycleObservers) {
-        for (const observer of c.lifeCycleObservers) {
-          await observer.start();
-        }
-      }
-    });
-    await this._forEachServer(s => s.start());
-  }
-
-  /**
-   * Stop the application instance and all of its registered servers.
-   * @returns {Promise}
-   * @memberof Application
-   */
-  public async stop(): Promise<void> {
-    await this._forEachServer(s => s.stop());
-    await this._forEachComponent(async c => {
-      if (c.lifeCycleObservers) {
-        for (const observer of c.lifeCycleObservers.reverse()) {
-          await observer.stop();
-        }
-      }
-    });
-  }
-
-  /**
-   * Discover bindings matching the key namespace or tag
-   * @param keyNamespace Binding key prefix
-   * @param tag Tag name
-   */
-  private _findByNamespaceOrTag(keyNamespace: string, tag?: string) {
-    const bindings = this.find(
-      b => b.key.startsWith(`${keyNamespace}.`) || (tag && b.tagMap[tag]),
-    );
-    return bindings;
-  }
-
-  /**
-   * Helper function for iterating across all registered servers.
-   * @protected
-   * @template T
-   * @param {(s: Server) => Promise<T>} fn The function to run against all
-   * registered servers
-   * @memberof Application
-   */
-  protected async _forEachServer<T>(fn: (s: Server) => Promise<T> | T) {
-    const bindings = this._findByNamespaceOrTag(CoreBindings.SERVERS, 'server');
-    await Promise.all(
-      bindings.map(async binding => {
-        const server = await this.get<Server>(binding.key);
-        return await fn(server);
-      }),
-    );
-  }
-
-  /**
-   * Helper function for iterating across all registered components.
-   * @protected
-   * @template T
-   * @param {(s: Server) => Promise<T>} fn The function to run against all
-   * registered components
-   * @memberof Application
-   */
-  protected async _forEachComponent<T>(fn: (c: Component) => Promise<T> | T) {
-    const bindings = this._findByNamespaceOrTag(
-      CoreBindings.COMPONENTS,
-      'component',
-    );
-    await Promise.all(
-      bindings.map(async binding => {
-        const component = await this.get<Component>(binding.key);
-        return await fn(component);
-      }),
-    );
-  }
-
-  /**
    * Add a component to this application and register extensions such as
    * controllers, providers, and servers from the component.
    *
@@ -232,10 +158,13 @@ export class Application extends Context implements LifeCycleObserver {
   public component(componentCtor: Constructor<Component>, name?: string) {
     name = name || componentCtor.name;
     const componentKey = `${CoreBindings.COMPONENTS}.${name}`;
-    this.bind(componentKey)
+    const binding = this.bind(componentKey)
       .toClass(componentCtor)
       .inScope(BindingScope.SINGLETON)
-      .tag('component');
+      .tag(CoreTags.COMPONENT);
+    if (isLifeCycleObserverClass(componentCtor)) {
+      binding.apply(asLifeCycleObserverBinding);
+    }
     // Assuming components can be synchronously instantiated
     const instance = this.getSync<Component>(componentKey);
     mountComponent(this, instance);

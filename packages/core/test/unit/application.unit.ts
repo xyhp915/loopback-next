@@ -16,9 +16,11 @@ import {
   Application,
   Component,
   CoreBindings,
-  LifeCycleObserver,
   Server,
+  LifeCycleObserver,
+  asLifeCycleObserverBinding,
 } from '../..';
+const CoreTags = CoreBindings.Tags;
 
 describe('Application', () => {
   describe('controller binding', () => {
@@ -29,16 +31,20 @@ describe('Application', () => {
 
     it('binds a controller', () => {
       const binding = app.controller(MyController);
-      expect(Array.from(binding.tagNames)).to.containEql('controller');
+      expect(Array.from(binding.tagNames)).to.containEql(CoreTags.CONTROLLER);
       expect(binding.key).to.equal('controllers.MyController');
-      expect(findKeysByTag(app, 'controller')).to.containEql(binding.key);
+      expect(findKeysByTag(app, CoreTags.CONTROLLER)).to.containEql(
+        binding.key,
+      );
     });
 
     it('binds a controller with custom name', () => {
       const binding = app.controller(MyController, 'my-controller');
-      expect(Array.from(binding.tagNames)).to.containEql('controller');
+      expect(Array.from(binding.tagNames)).to.containEql(CoreTags.CONTROLLER);
       expect(binding.key).to.equal('controllers.my-controller');
-      expect(findKeysByTag(app, 'controller')).to.containEql(binding.key);
+      expect(findKeysByTag(app, CoreTags.CONTROLLER)).to.containEql(
+        binding.key,
+      );
     });
 
     function givenApp() {
@@ -55,14 +61,14 @@ describe('Application', () => {
 
     it('binds a component', () => {
       app.component(MyComponent);
-      expect(findKeysByTag(app, 'component')).to.containEql(
+      expect(findKeysByTag(app, CoreTags.COMPONENT)).to.containEql(
         'components.MyComponent',
       );
     });
 
     it('binds a component with custom name', () => {
       app.component(MyComponent, 'my-component');
-      expect(findKeysByTag(app, 'component')).to.containEql(
+      expect(findKeysByTag(app, CoreTags.COMPONENT)).to.containEql(
         'components.my-component',
       );
     });
@@ -143,7 +149,7 @@ describe('Application', () => {
     it('defaults to constructor name', async () => {
       const app = new Application();
       const binding = app.server(FakeServer);
-      expect(Array.from(binding.tagNames)).to.containEql('server');
+      expect(Array.from(binding.tagNames)).to.containEql(CoreTags.SERVER);
       const result = await app.getServer(FakeServer.name);
       expect(result.constructor.name).to.equal(FakeServer.name);
     });
@@ -159,8 +165,8 @@ describe('Application', () => {
     it('allows binding of multiple servers as an array', async () => {
       const app = new Application();
       const bindings = app.servers([FakeServer, AnotherServer]);
-      expect(Array.from(bindings[0].tagNames)).to.containEql('server');
-      expect(Array.from(bindings[1].tagNames)).to.containEql('server');
+      expect(Array.from(bindings[0].tagNames)).to.containEql(CoreTags.SERVER);
+      expect(Array.from(bindings[1].tagNames)).to.containEql(CoreTags.SERVER);
       const fakeResult = await app.getServer(FakeServer);
       expect(fakeResult.constructor.name).to.equal(FakeServer.name);
       const AnotherResult = await app.getServer(AnotherServer);
@@ -190,7 +196,7 @@ describe('Application', () => {
       app
         .bind('fake-server')
         .toClass(FakeServer)
-        .tag('server')
+        .tag(CoreTags.SERVER)
         .inScope(BindingScope.SINGLETON);
       await app.start();
       const server = await app.get<FakeServer>('fake-server');
@@ -213,6 +219,64 @@ describe('Application', () => {
       expect(component.status).to.equal('stopped');
     });
 
+    it('starts/stops all registered life cycle observers', async () => {
+      const app = new Application();
+      app
+        .bind('my-observer')
+        .toClass(MyObserver)
+        .apply(asLifeCycleObserverBinding);
+
+      const observer = await app.get<MyObserver>('my-observer');
+      expect(observer.status).to.equal('not-initialized');
+      await app.start();
+      expect(observer.status).to.equal('started');
+      await app.stop();
+      expect(observer.status).to.equal('stopped');
+    });
+
+    it('starts/stops all registered life cycle observers by order', async () => {
+      const app = new Application();
+      const events: string[] = [];
+      class MockObserver implements LifeCycleObserver {
+        constructor(private name: string) {}
+
+        start() {
+          events.push(`start-${this.name}`);
+        }
+        stop() {
+          events.push(`stop-${this.name}`);
+        }
+      }
+      app
+        .bind('my-observer-1')
+        .to(new MockObserver('1'))
+        .apply(asLifeCycleObserverBinding);
+
+      app
+        .bind('my-observer-2')
+        .to(new MockObserver('2'))
+        .apply(asLifeCycleObserverBinding);
+
+      // Add a server
+      app
+        .bind('my-server')
+        .to(new MockObserver('server'))
+        .tag(CoreTags.SERVER)
+        .apply(asLifeCycleObserverBinding);
+
+      await app.start();
+      expect(events).to.eql(['start-1', 'start-2', 'start-server']);
+      await app.stop();
+      expect(events).to.eql([
+        'start-1',
+        'start-2',
+        'start-server',
+        'stop-server',
+        'stop-2',
+        'stop-1',
+      ]);
+    });
+
     it('does not attempt to start poorly named bindings', async () => {
       const app = new Application();
       app.component(FakeComponent);
@@ -229,18 +293,16 @@ describe('Application', () => {
   }
 });
 
-class FakeComponent implements Component, LifeCycleObserver {
+class FakeComponent implements Component {
   status = 'not-initialized';
   servers: {
     [name: string]: Constructor<Server>;
   };
-  lifeCycleObservers: LifeCycleObserver[];
   constructor() {
     this.servers = {
       FakeServer,
       FakeServer2: FakeServer,
     };
-    this.lifeCycleObservers = [this];
   }
   start() {
     this.status = 'started';
@@ -265,3 +327,14 @@ class FakeServer extends Context implements Server {
 }
 
 class AnotherServer extends FakeServer {}
+
+class MyObserver implements LifeCycleObserver {
+  status = 'not-initialized';
+
+  start() {
+    this.status = 'started';
+  }
+  stop() {
+    this.status = 'stopped';
+  }
+}
