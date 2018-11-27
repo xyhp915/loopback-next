@@ -6,7 +6,6 @@
 import {Constructor, Provider, BoundValue, Binding} from '@loopback/context';
 import {Server} from './server';
 import {Application, ControllerClass} from './application';
-import {LifeCycleObserver} from './lifecycle';
 
 /**
  * A map of provider classes to be bound to a context
