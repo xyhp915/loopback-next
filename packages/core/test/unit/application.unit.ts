@@ -234,49 +234,6 @@ describe('Application', () => {
       expect(observer.status).to.equal('stopped');
     });
 
-    it('starts/stops all registered life cycle observers by order', async () => {
-      const app = new Application();
-      const events: string[] = [];
-      class MockObserver implements LifeCycleObserver {
-        constructor(private name: string) {}
-
-        start() {
-          events.push(`start-${this.name}`);
-        }
-        stop() {
-          events.push(`stop-${this.name}`);
-        }
-      }
-      app
-        .bind('my-observer-1')
-        .to(new MockObserver('1'))
-        .apply(asLifeCycleObserverBinding);
-
-      app
-        .bind('my-observer-2')
-        .to(new MockObserver('2'))
-        .apply(asLifeCycleObserverBinding);
-
-      // Add a server
-      app
-        .bind('my-server')
-        .to(new MockObserver('server'))
-        .tag(CoreTags.SERVER)
-        .apply(asLifeCycleObserverBinding);
-
-      await app.start();
-      expect(events).to.eql(['start-1', 'start-2', 'start-server']);
-      await app.stop();
-      expect(events).to.eql([
-        'start-1',
-        'start-2',
-        'start-server',
-        'stop-server',
-        'stop-2',
-        'stop-1',
-      ]);
-    });
-
     it('does not attempt to start poorly named bindings', async () => {
       const app = new Application();
       app.component(FakeComponent);

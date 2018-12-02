@@ -3,14 +3,15 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import {Binding, BindingScope, Constructor} from '@loopback/context';
+import {Binding, BindingScope, Constructor, Context} from '@loopback/context';
 import {Component, mountComponent} from './component';
 import {CoreBindings} from './keys';
 import {
   asLifeCycleObserverBinding,
   isLifeCycleObserverClass,
+  LifeCycleObserver,
 } from './lifecycle';
-import {ContextWithLifeCycle} from './lifecycle-context';
+import {LifeCycleObserverRegistry} from './lifecycle-registry';
 import {Server} from './server';
 const CoreTags = CoreBindings.Tags;
 import debugFactory = require('debug');
@@ -21,10 +22,13 @@ const debug = debugFactory('loopback:core:application');
  * components, servers, controllers, repositories, datasources, connectors,
  * and models.
  */
-export class Application extends ContextWithLifeCycle {
+export class Application extends Context implements LifeCycleObserver {
+  lifecycle: LifeCycleObserverRegistry;
+
   constructor(public options: ApplicationConfig = {}) {
     super('application');
 
+    this.lifecycle = new LifeCycleObserverRegistry(this);
     // Bind to self to allow injection of application context in other modules.
     this.bind(CoreBindings.APPLICATION_INSTANCE).to(this);
     // Make options available to other modules as well.
@@ -178,6 +182,25 @@ export class Application extends ContextWithLifeCycle {
    */
   public setMetadata(metadata: ApplicationMetadata) {
     this.bind(CoreBindings.APPLICATION_METADATA).to(metadata);
+  }
+
+  /**
+   * Start the application, and all of its registered servers.
+   *
+   * @returns {Promise}
+   * @memberof Application
+   */
+  public async start(): Promise<void> {
+    await this.lifecycle.start();
+  }
+
+  /**
+   * Stop the application instance and all of its registered servers.
+   * @returns {Promise}
+   * @memberof Application
+   */
+  public async stop(): Promise<void> {
+    await this.lifecycle.stop();
   }
 }
 

@@ -9,7 +9,7 @@ export * from './application';
 export * from './component';
 export * from './keys';
 export * from './lifecycle';
-export * from './lifecycle-context';
+export * from './lifecycle-registry';
 
 // Re-export public Core API coming from dependencies
 export * from '@loopback/context';

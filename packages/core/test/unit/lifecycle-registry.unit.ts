@@ -6,20 +6,21 @@
 import {expect} from '@loopback/testlab';
 import {Context, BindingScope} from '@loopback/context';
 import {
-  ContextWithLifeCycle,
+  LifeCycleObserverRegistry,
   Server,
   LifeCycleObserver,
   CoreBindings,
 } from '../..';
 import {asLifeCycleObserverBinding} from '../../src';
 
-describe('lifecycle context', () => {
-  let ctx: ContextWithLifeCycle;
-  beforeEach(givenContext);
+describe('lifecycle registry', () => {
+  let ctx: Context;
+  let lifecycle: LifeCycleObserverRegistry;
+  beforeEach(givenObserverRegistry);
 
   it('finds servers as life cycle observers', () => {
     givenServerBinding('servers.FakeServer');
-    const bindings = ctx.findLifeCycleObserverBindings();
+    const bindings = lifecycle.findObserverBindings();
     expect(bindings.map(b => b.key)).to.containEql('servers.FakeServer');
   });
 
@@ -28,7 +29,7 @@ describe('lifecycle context', () => {
       .bind('my-observer')
       .toClass(MyObserver)
       .apply(asLifeCycleObserverBinding);
-    const bindings = ctx.findLifeCycleObserverBindings();
+    const bindings = lifecycle.findObserverBindings();
     expect(bindings.map(b => b.key)).to.containEql('my-observer');
   });
 
@@ -39,27 +40,30 @@ describe('lifecycle context', () => {
     givenObserverBinding('my-observer-2', 'g2');
     givenObserverBinding('my-observer-3');
 
-    const bindings = ctx.findLifeCycleObserverBindings();
-    expect(bindings.map(b => b.key)).to.eql([
-      'my-observer-1',
-      'my-observer-2',
-      'my-observer-3',
-      'server-1',
-      'server-2',
-    ]);
+    const groups = getObserverGroups();
+    expect(groups).to.containEql({group: 'g1', keys: ['my-observer-1']});
+    expect(groups).to.containEql({group: 'g2', keys: ['my-observer-2']});
+    expect(groups).to.containEql({group: '', keys: ['my-observer-3']});
+    expect(groups).to.containEql({
+      group: 'server',
+      keys: ['server-1', 'server-2'],
+    });
+    expect(groups[3]).to.eql({
+      group: 'server',
+      keys: ['server-1', 'server-2'],
+    });
   });
 
   it('sorts life cycle observers by group', () => {
-    ctx.configureLifeCycleObserverGroups(['g1', 'g2']);
+    lifecycle.setGroupsByOrder(['g1', 'g2']);
     givenObserverBinding('my-observer-1', 'g1');
     givenObserverBinding('my-observer-2', 'g2');
     givenObserverBinding('my-observer-3', 'g1');
 
-    const bindings = ctx.findLifeCycleObserverBindings();
-    expect(bindings.map(b => b.key)).to.eql([
-      'my-observer-1',
-      'my-observer-3',
-      'my-observer-2',
+    const groups = getObserverGroups();
+    expect(groups).to.eql([
+      {group: 'g1', keys: ['my-observer-1', 'my-observer-3']},
+      {group: 'g2', keys: ['my-observer-2']},
     ]);
   });
 
@@ -76,7 +80,7 @@ describe('lifecycle context', () => {
       }
     }
 
-    ctx.configureLifeCycleObserverGroups(['g1', 'g2', 'server']);
+    lifecycle.setGroupsByOrder(['g1', 'g2', 'server']);
 
     ctx
       .bind('my-observer-2')
@@ -97,9 +101,9 @@ describe('lifecycle context', () => {
       .tag(CoreBindings.Tags.SERVER)
       .apply(asLifeCycleObserverBinding);
 
-    await ctx.start();
+    await lifecycle.start();
     expect(events).to.eql(['start-1', 'start-2', 'start-server']);
-    await ctx.stop();
+    await lifecycle.stop();
     expect(events).to.eql([
       'start-1',
       'start-2',
@@ -140,7 +144,7 @@ describe('lifecycle context', () => {
       }
     }
 
-    ctx.configureLifeCycleObserverGroups(['g1', 'g2']);
+    lifecycle.setGroupsByOrder(['g1', 'g2']);
 
     ctx
       .bind('my-observer-1')
@@ -154,7 +158,7 @@ describe('lifecycle context', () => {
       .tag({[CoreBindings.Tags.LIFE_CYCLE_OBSERVER_GROUP]: 'g2'})
       .apply(asLifeCycleObserverBinding);
 
-    await ctx.start();
+    await lifecycle.start();
     expect(events).to.eql([
       'preStart-1',
       'preStart-2',
@@ -163,7 +167,7 @@ describe('lifecycle context', () => {
       'postStart-1',
       'postStart-2',
     ]);
-    await ctx.stop();
+    await lifecycle.stop();
     expect(events).to.eql([
       'preStart-1',
       'preStart-2',
@@ -180,8 +184,17 @@ describe('lifecycle context', () => {
     ]);
   });
 
-  function givenContext() {
-    ctx = new ContextWithLifeCycle('context-with-lifecycle');
+  function givenObserverRegistry() {
+    ctx = new Context('context-with-lifecycle');
+    lifecycle = new LifeCycleObserverRegistry(ctx);
+  }
+
+  function getObserverGroups() {
+    const groups = lifecycle.getObserverGroupsByOrder();
+    return groups.map(g => ({
+      group: g.group,
+      keys: g.bindings.map(b => b.key),
+    }));
   }
 
   function givenObserverBinding(key: string, group?: string) {
