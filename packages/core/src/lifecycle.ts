@@ -11,12 +11,21 @@ import {CoreTags} from './keys';
  */
 export interface LifeCycleObserver {
   preStart?(): Promise<void> | void;
-  start(): Promise<void> | void;
+  start?(): Promise<void> | void;
   postStart?(): Promise<void> | void;
   preStop?(): Promise<void> | void;
-  stop(): Promise<void> | void;
+  stop?(): Promise<void> | void;
   postStop?(): Promise<void> | void;
 }
+
+const lifeCycleMethods: (keyof LifeCycleObserver)[] = [
+  'preStart',
+  'start',
+  'postStart',
+  'preStop',
+  'stop',
+  'postStop',
+];
 
 /**
  * Test if an object implements LifeCycleObserver
@@ -25,7 +34,7 @@ export interface LifeCycleObserver {
 export function isLifeCycleObserver(obj: {
   [name: string]: unknown;
 }): obj is LifeCycleObserver {
-  return typeof obj.start === 'function' && typeof obj.stop === 'function';
+  return lifeCycleMethods.some(m => typeof obj[m] === 'function');
 }
 
 /**
