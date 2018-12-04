@@ -4,9 +4,8 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {Binding, BindingScope, BindingType, Context} from '@loopback/context';
-import {CoreBindings} from './keys';
+import {CoreTags} from './keys';
 import {LifeCycleObserver} from './lifecycle';
-const CoreTags = CoreBindings.Tags;
 import debugFactory = require('debug');
 const debug = debugFactory('loopback:core:lifecycle');
 

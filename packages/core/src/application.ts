@@ -5,7 +5,7 @@
 
 import {Binding, BindingScope, Constructor, Context} from '@loopback/context';
 import {Component, mountComponent} from './component';
-import {CoreBindings} from './keys';
+import {CoreBindings, CoreTags} from './keys';
 import {
   asLifeCycleObserverBinding,
   isLifeCycleObserverClass,
@@ -13,7 +13,6 @@ import {
 } from './lifecycle';
 import {LifeCycleObserverRegistry} from './lifecycle-registry';
 import {Server} from './server';
-const CoreTags = CoreBindings.Tags;
 import debugFactory = require('debug');
 const debug = debugFactory('loopback:core:application');
 

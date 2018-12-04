@@ -16,11 +16,11 @@ import {
   Application,
   Component,
   CoreBindings,
+  CoreTags,
   Server,
   LifeCycleObserver,
   asLifeCycleObserverBinding,
 } from '../..';
-const CoreTags = CoreBindings.Tags;
 
 describe('Application', () => {
   describe('controller binding', () => {

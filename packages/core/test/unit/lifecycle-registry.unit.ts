@@ -9,9 +9,9 @@ import {
   LifeCycleObserverRegistry,
   Server,
   LifeCycleObserver,
-  CoreBindings,
+  CoreTags,
+  asLifeCycleObserverBinding,
 } from '../..';
-import {asLifeCycleObserverBinding} from '../../src';
 
 describe('lifecycle registry', () => {
   let ctx: Context;
@@ -85,20 +85,20 @@ describe('lifecycle registry', () => {
     ctx
       .bind('my-observer-2')
       .to(new MockObserver('2'))
-      .tag({[CoreBindings.Tags.LIFE_CYCLE_OBSERVER_GROUP]: 'g2'})
+      .tag({[CoreTags.LIFE_CYCLE_OBSERVER_GROUP]: 'g2'})
       .apply(asLifeCycleObserverBinding);
 
     ctx
       .bind('my-observer-1')
       .to(new MockObserver('1'))
-      .tag({[CoreBindings.Tags.LIFE_CYCLE_OBSERVER_GROUP]: 'g1'})
+      .tag({[CoreTags.LIFE_CYCLE_OBSERVER_GROUP]: 'g1'})
       .apply(asLifeCycleObserverBinding);
 
     // Add a server
     ctx
       .bind('my-server')
       .to(new MockObserver('server'))
-      .tag(CoreBindings.Tags.SERVER)
+      .tag(CoreTags.SERVER)
       .apply(asLifeCycleObserverBinding);
 
     await lifecycle.start();
@@ -149,13 +149,13 @@ describe('lifecycle registry', () => {
     ctx
       .bind('my-observer-1')
       .to(new MockObserver('1'))
-      .tag({[CoreBindings.Tags.LIFE_CYCLE_OBSERVER_GROUP]: 'g1'})
+      .tag({[CoreTags.LIFE_CYCLE_OBSERVER_GROUP]: 'g1'})
       .apply(asLifeCycleObserverBinding);
 
     ctx
       .bind('my-observer-2')
       .to(new MockObserver('2'))
-      .tag({[CoreBindings.Tags.LIFE_CYCLE_OBSERVER_GROUP]: 'g2'})
+      .tag({[CoreTags.LIFE_CYCLE_OBSERVER_GROUP]: 'g2'})
       .apply(asLifeCycleObserverBinding);
 
     await lifecycle.start();
@@ -203,7 +203,7 @@ describe('lifecycle registry', () => {
       .toClass(MyObserver)
       .apply(asLifeCycleObserverBinding);
     if (group) {
-      binding.tag({[CoreBindings.Tags.LIFE_CYCLE_OBSERVER_GROUP]: group});
+      binding.tag({[CoreTags.LIFE_CYCLE_OBSERVER_GROUP]: group});
     }
     return binding;
   }
@@ -212,10 +212,10 @@ describe('lifecycle registry', () => {
     const serverBinding = ctx
       .bind(key)
       .toClass(FakeServer)
-      .tag(CoreBindings.Tags.SERVER)
+      .tag(CoreTags.SERVER)
       .inScope(BindingScope.SINGLETON);
     if (group) {
-      serverBinding.tag({[CoreBindings.Tags.LIFE_CYCLE_OBSERVER_GROUP]: group});
+      serverBinding.tag({[CoreTags.LIFE_CYCLE_OBSERVER_GROUP]: group});
     }
     return serverBinding;
   }

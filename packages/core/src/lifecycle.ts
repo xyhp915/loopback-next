@@ -4,7 +4,7 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {Binding, BindingScope, Constructor} from '@loopback/context';
-import {CoreBindings} from './keys';
+import {CoreTags} from './keys';
 
 /**
  * Observers to handle life cycle start/stop events
@@ -44,6 +44,6 @@ export function isLifeCycleObserverClass(
  */
 export function asLifeCycleObserverBinding<T = unknown>(binding: Binding<T>) {
   return binding
-    .tag(CoreBindings.Tags.LIFE_CYCLE_OBSERVER)
+    .tag(CoreTags.LIFE_CYCLE_OBSERVER)
     .inScope(BindingScope.SINGLETON);
 }

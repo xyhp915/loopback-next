@@ -71,31 +71,31 @@ export namespace CoreBindings {
    * context
    */
   export const CONTROLLER_CURRENT = BindingKey.create('controller.current');
+}
 
-  export namespace Tags {
-    /**
-     * Binding tag for components
-     */
-    export const COMPONENT = 'component';
+export namespace CoreTags {
+  /**
+   * Binding tag for components
+   */
+  export const COMPONENT = 'component';
 
-    /**
-     * Binding tag for servers
-     */
-    export const SERVER = 'server';
+  /**
+   * Binding tag for servers
+   */
+  export const SERVER = 'server';
 
-    /**
-     * Binding tag for controllers
-     */
-    export const CONTROLLER = 'controller';
+  /**
+   * Binding tag for controllers
+   */
+  export const CONTROLLER = 'controller';
 
-    /**
-     * Binding tag for life cycle observers
-     */
-    export const LIFE_CYCLE_OBSERVER = 'lifeCycleObserver';
+  /**
+   * Binding tag for life cycle observers
+   */
+  export const LIFE_CYCLE_OBSERVER = 'lifeCycleObserver';
 
-    /**
-     * Binding tag for group name of life cycle observers
-     */
-    export const LIFE_CYCLE_OBSERVER_GROUP = 'lifeCycleObserverGroup';
-  }
+  /**
+   * Binding tag for group name of life cycle observers
+   */
+  export const LIFE_CYCLE_OBSERVER_GROUP = 'lifeCycleObserverGroup';
 }
