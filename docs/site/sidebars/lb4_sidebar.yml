@@ -132,6 +132,10 @@ children:
     url: DataSources.html
     output: 'web, pdf'
 
+  - title: 'Life Cycles'
+    url: Routes.html
+    output: 'web, pdf'
+
   - title: 'Routes'
     url: Routes.html
     output: 'web, pdf'
